@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>학습 현황</title>
+<style>
+  body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#f4f6fa;color:#1f2a44;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:16px;box-sizing:border-box}
+  .box{max-width:320px}
+  .t{font-size:17px;font-weight:600;margin-bottom:8px}
+  .s{font-size:14px;color:#5b6478;line-height:1.6}
+  a{color:#1f4fbf}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="t">학습 현황</div>
+  <div class="s" id="msg">페이지를 여는 중입니다…</div>
+</div>
+<script>
+  // 학생 조회 페이지(구글 Apps Script 웹앱) 주소 — 재배포해도 주소가 같으면 고칠 필요 없음
+  var APP = 'https://script.google.com/macros/s/AKfycbyNAuizQKw2CW-og3glZPxPFgZR7Xxu_eBohLscoREzMZHOU4LCPDchdO_QOgTkKzQw/exec';
+  var q = location.search.replace(/^\?/, '');
+  var m = q.match(/(?:^|&)id=([^&]+)/);
+  var code = m ? m[1] : q.split('&')[0];
+  code = decodeURIComponent(code || '').replace(/[^0-9a-zA-Z]/g, '');
+  if (code) {
+    var url = APP + '?id=' + code;
+    location.replace(url);
+    document.getElementById('msg').innerHTML = '자동으로 넘어가지 않으면 <a href="' + url + '">여기</a>를 눌러 주세요.';
+  } else {
+    document.getElementById('msg').textContent = '문자로 받으신 학습 현황 링크로 접속해 주세요.';
+  }
+</script>
+</body>
+</html>
