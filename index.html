@@ -5,34 +5,87 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>학습 현황</title>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
 <style>
-  body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#f4f6fa;color:#1f2a44;
+  html,body{height:100%}
+  body{margin:0;overflow:hidden;font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#f3f6f9;color:#152232;
        display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:16px;box-sizing:border-box}
   .box{max-width:320px}
-  .t{font-size:17px;font-weight:600;margin-bottom:8px}
-  .s{font-size:14px;color:#5b6478;line-height:1.6}
+  .t{font-size:17px;font-weight:600;margin-bottom:10px}
+  .s{font-size:14px;color:#5f6e7d;line-height:1.6}
+  .sp{width:28px;height:28px;margin:0 auto 14px;border:3px solid #dfe6ec;border-top-color:#3d9be0;border-radius:50%;animation:r .8s linear infinite}
+  @keyframes r{to{transform:rotate(360deg)}}
   a{color:#1f4fbf}
 </style>
 </head>
 <body>
 <div class="box">
+  <div class="sp" id="sp"></div>
   <div class="t">학습 현황</div>
-  <div class="s" id="msg">페이지를 여는 중입니다…</div>
+  <div class="s" id="msg">불러오는 중입니다…</div>
 </div>
 <script>
+(function () {
   // 학생 조회 페이지(구글 Apps Script 웹앱) 주소 — 재배포해도 주소가 같으면 고칠 필요 없음
   var APP = 'https://script.google.com/macros/s/AKfycbyNAuizQKw2CW-og3glZPxPFgZR7Xxu_eBohLscoREzMZHOU4LCPDchdO_QOgTkKzQw/exec';
   var q = location.search.replace(/^\?/, '');
   var m = q.match(/(?:^|&)id=([^&]+)/);
-  var code = m ? m[1] : q.split('&')[0];
-  code = decodeURIComponent(code || '').replace(/[^0-9a-zA-Z]/g, '');
-  if (code) {
-    var url = APP + '?id=' + code;
-    location.replace(url);
-    document.getElementById('msg').innerHTML = '자동으로 넘어가지 않으면 <a href="' + url + '">여기</a>를 눌러 주세요.';
-  } else {
-    document.getElementById('msg').textContent = '문자로 받으신 학습 현황 링크로 접속해 주세요.';
+  var code = decodeURIComponent((m ? m[1] : q.split('&')[0]) || '').replace(/[^0-9a-zA-Z]/g, '');
+  var msg = document.getElementById('msg');
+  if (!code) { document.getElementById('sp').style.display = 'none'; msg.textContent = '문자로 받으신 학습 현황 링크로 접속해 주세요.'; return; }
+  var SLOW = APP + '?id=' + code, KEY = 'sv1_' + code;
+
+  // 구글 페이지 안에서 쓰던 google.script.run 을 여기서도 쓸 수 있게 (같은 함수를 웹앱에 POST로 요청)
+  var SHIM = '<script>(function(A){function call(f,a,ok,no){fetch(A,{method:"POST",body:JSON.stringify({fn:f,args:a}),headers:{"Content-Type":"text/plain;charset=utf-8"}})' +
+    '.then(function(r){return r.json();}).then(function(o){if(o.ok){ok&&ok(o.v);}else{no&&no(new Error(o.err));}},function(){no&&no(new Error("인터넷 연결을 확인한 뒤 다시 시도해 주세요."));});}' +
+    'function R(ok,no){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(f){return R(f,no);};if(k==="withFailureHandler")return function(f){return R(ok,f);};' +
+    'if(typeof k!=="string"||k==="then")return undefined;return function(){call(k,[].slice.call(arguments),ok,no);};}});}' +
+    'window.google=window.google||{};window.google.script={run:R(null,null)};})(' + JSON.stringify(APP) + ');<\/script>';
+
+  var shown = '', touched = false, cur = null;
+  // 받은 화면을 전체 화면 틀(iframe)에 띄움 — 새 내용이 오면 뒤에서 그려 두었다가 바꿔 끼움
+  function show(page) {
+    var nl = page.indexOf('\n'), title = page.slice(0, nl), html = page.slice(nl + 1);
+    var i = html.indexOf('<head>');
+    html = i >= 0 ? html.slice(0, i + 6) + SHIM + html.slice(i + 6) : SHIM + html;
+    shown = page; touched = false;
+    var f = document.createElement('iframe');
+    f.title = title || '학습 현황';
+    f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0;margin:0;padding:0;background:#f3f6f9;z-index:' + (cur ? 3 : 2);
+    f.onload = function () {
+      if (cur && cur !== f) cur.parentNode.removeChild(cur);
+      cur = f; f.style.zIndex = 2;
+      document.title = title || '학습 현황';
+      try { ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(function (ev) { f.contentWindow.addEventListener(ev, function () { touched = true; }, { passive: true, once: true, capture: true }); }); } catch (e) {}
+    };
+    f.srcdoc = html;
+    document.body.appendChild(f);
   }
+  function bar(page) {
+    var b = document.createElement('div');
+    b.textContent = '새 소식이 있어요 · 눌러서 새로 보기';
+    b.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#16314f;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer';
+    b.onclick = function () { show(page); };
+    try { cur.contentDocument.body.appendChild(b); } catch (e) { document.body.appendChild(b); b.style.zIndex = 9; }
+  }
+  var cached = null;
+  try { cached = localStorage.getItem(KEY); } catch (e) {}
+  if (cached && cached.indexOf('\n') > 0) { try { show(cached); } catch (e) { cached = null; } }
+
+  var done = false;
+  var timer = setTimeout(function () { if (!done && !shown) location.replace(SLOW); }, 15000);
+  fetch(APP + '?api=1&id=' + encodeURIComponent(code), { credentials: 'omit' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function (page) {
+      done = true; clearTimeout(timer);
+      if (page.indexOf('\n') < 0 || page.indexOf('<html') < 0) throw new Error('bad');
+      try { localStorage.setItem(KEY, page); } catch (e) {}
+      if (!shown) show(page);
+      else if (page !== shown) { if (!touched) show(page); else bar(page); }
+    })
+    .catch(function () { done = true; clearTimeout(timer); if (!shown) location.replace(SLOW); });
+})();
 </script>
 </body>
 </html>
