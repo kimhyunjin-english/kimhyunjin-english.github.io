@@ -37,7 +37,7 @@
   var SLOW = APP + '?id=' + code, KEY = 'sv1_' + code;
 
   // 구글 페이지 안에서 쓰던 google.script.run 을 여기서도 쓸 수 있게 (같은 함수를 웹앱에 POST로 요청)
-  var SHIM = '<script>(function(A){function call(f,a,ok,no){fetch(A,{method:"POST",body:JSON.stringify({fn:f,args:a}),headers:{"Content-Type":"text/plain;charset=utf-8"}})' +
+  var SHIM = '<script>(function(A){function call(f,a,ok,no){var b=JSON.stringify({fn:f,args:a});fetch(A,{method:"POST",body:b,keepalive:b.length<60000,headers:{"Content-Type":"text/plain;charset=utf-8"}})' +
     '.then(function(r){return r.json();}).then(function(o){if(o.ok){ok&&ok(o.v);}else{no&&no(new Error(o.err));}},function(){no&&no(new Error("인터넷 연결을 확인한 뒤 다시 시도해 주세요."));});}' +
     'function R(ok,no){return new Proxy({},{get:function(_,k){if(k==="withSuccessHandler")return function(f){return R(f,no);};if(k==="withFailureHandler")return function(f){return R(ok,f);};' +
     'if(typeof k!=="string"||k==="then")return undefined;return function(){call(k,[].slice.call(arguments),ok,no);};}});}' +
